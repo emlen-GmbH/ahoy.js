@@ -518,7 +518,7 @@
   ahoy.start = function () {
     createVisit();
 
-    ahoy.start = function () {};
+    // ahoy.start = function () {};
   };
 
   documentReady(function() {

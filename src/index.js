@@ -463,7 +463,7 @@ for (let i = 0; i < eventQueue.length; i++) {
 ahoy.start = function () {
   createVisit();
 
-  ahoy.start = function () {};
+  // ahoy.start = function () {};
 };
 
 documentReady(function() {
