@@ -2,11 +2,11 @@
  * Ahoy.js
  * Simple, powerful JavaScript analytics
  * https://github.com/ankane/ahoy.js
- * v0.3.6
+ * v0.3.7
  * MIT License
  */
 
-import { objectToFormData } from 'object-to-formdata';
+import { serialize } from 'object-to-formdata';
 
 // https://www.quirksmode.org/js/cookies.html
 
@@ -279,7 +279,7 @@ function trackEventNow(event) {
     // stringify so we keep the type
     data.events_json = JSON.stringify(data.events);
     delete data.events;
-    window.navigator.sendBeacon(eventsUrl(), objectToFormData(data));
+    window.navigator.sendBeacon(eventsUrl(), serialize(data));
   });
 }
 

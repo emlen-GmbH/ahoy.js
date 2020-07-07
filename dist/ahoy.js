@@ -2,7 +2,7 @@
  * Ahoy.js
  * Simple, powerful JavaScript analytics
  * https://github.com/ankane/ahoy.js
- * v0.3.6
+ * v0.3.7
  * MIT License
  */
 
@@ -12,7 +12,90 @@
   (global = global || self, global.ahoy = factory());
 }(this, (function () { 'use strict';
 
-  var n=function(n){return void 0===n},e=function(n){return Array.isArray(n)},t=function(n){return n&&"number"==typeof n.size&&"string"==typeof n.type&&"function"==typeof n.slice},s=function(o,i,r,f){return (i=i||{}).indices=!n(i.indices)&&i.indices,i.nullsAsUndefineds=!n(i.nullsAsUndefineds)&&i.nullsAsUndefineds,i.booleansAsIntegers=!n(i.booleansAsIntegers)&&i.booleansAsIntegers,r=r||new FormData,n(o)?r:(null===o?i.nullsAsUndefineds||r.append(f,""):"boolean"!=typeof o?e(o)?o.length&&o.forEach(function(n,e){s(n,i,r,f+"["+(i.indices?e:"")+"]");}):o instanceof Date?r.append(f,o.toISOString()):o!==Object(o)||function(n){return t(n)&&"string"==typeof n.name&&("object"==typeof n.lastModifiedDate||"number"==typeof n.lastModified)}(o)||t(o)?r.append(f,o):Object.keys(o).forEach(function(n){var t=o[n];if(e(t)){ for(;n.length>2&&n.lastIndexOf("[]")===n.length-2;){ n=n.substring(0,n.length-2); } }s(t,i,r,f?f+"["+n+"]":n);}):r.append(f,i.booleansAsIntegers?o?1:0:o),r)};
+  var isUndefined = function (value) { return value === undefined; };
+
+  var isNull = function (value) { return value === null; };
+
+  var isBoolean = function (value) { return typeof value === 'boolean'; };
+
+  var isObject = function (value) { return value === Object(value); };
+
+  var isArray = function (value) { return Array.isArray(value); };
+
+  var isDate = function (value) { return value instanceof Date; };
+
+  var isBlob = function (value) { return value &&
+    typeof value.size === 'number' &&
+    typeof value.type === 'string' &&
+    typeof value.slice === 'function'; };
+
+  var isFile = function (value) { return isBlob(value) &&
+    typeof value.name === 'string' &&
+    (typeof value.lastModifiedDate === 'object' ||
+      typeof value.lastModified === 'number'); };
+
+  var serialize = function (obj, cfg, fd, pre) {
+    cfg = cfg || {};
+
+    cfg.indices = isUndefined(cfg.indices) ? false : cfg.indices;
+
+    cfg.nullsAsUndefineds = isUndefined(cfg.nullsAsUndefineds)
+      ? false
+      : cfg.nullsAsUndefineds;
+
+    cfg.booleansAsIntegers = isUndefined(cfg.booleansAsIntegers)
+      ? false
+      : cfg.booleansAsIntegers;
+
+    fd = fd || new FormData();
+
+    if (isUndefined(obj)) {
+      return fd;
+    } else if (isNull(obj)) {
+      if (!cfg.nullsAsUndefineds) {
+        fd.append(pre, '');
+      }
+    } else if (isBoolean(obj)) {
+      if (cfg.booleansAsIntegers) {
+        fd.append(pre, obj ? 1 : 0);
+      } else {
+        fd.append(pre, obj);
+      }
+    } else if (isArray(obj)) {
+      if (obj.length) {
+        obj.forEach(function (value, index) {
+          var key = pre + '[' + (cfg.indices ? index : '') + ']';
+
+          serialize(value, cfg, fd, key);
+        });
+      }
+    } else if (isDate(obj)) {
+      fd.append(pre, obj.toISOString());
+    } else if (isObject(obj) && !isFile(obj) && !isBlob(obj)) {
+      Object.keys(obj).forEach(function (prop) {
+        var value = obj[prop];
+
+        if (isArray(value)) {
+          while (prop.length > 2 && prop.lastIndexOf('[]') === prop.length - 2) {
+            prop = prop.substring(0, prop.length - 2);
+          }
+        }
+
+        var key = pre ? pre + '[' + prop + ']' : prop;
+
+        serialize(value, cfg, fd, key);
+      });
+    } else {
+      fd.append(pre, obj);
+    }
+
+    return fd;
+  };
+
+  var index_module = {
+    serialize: serialize,
+  };
+  var index_module_1 = index_module.serialize;
 
   // https://www.quirksmode.org/js/cookies.html
 
@@ -285,7 +368,7 @@
       // stringify so we keep the type
       data.events_json = JSON.stringify(data.events);
       delete data.events;
-      window.navigator.sendBeacon(eventsUrl(), s(data));
+      window.navigator.sendBeacon(eventsUrl(), index_module_1(data));
     });
   }
 
