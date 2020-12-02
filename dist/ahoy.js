@@ -484,6 +484,12 @@
     return getCookie("ahoy_visitor");
   };
 
+  ahoy.prolongVisitExpiration = function() {
+    var visitId = ahoy.getVisitId();
+    destroyCookie("ahoy_visit");
+    setCookie("ahoy_visit", visitId, config.visitDuration);
+  };
+
   ahoy.reset = function () {
     destroyCookie("ahoy_visit");
     destroyCookie("ahoy_visitor");
