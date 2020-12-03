@@ -347,9 +347,13 @@ ahoy.getVisitorId = ahoy.getVisitorToken = function () {
 };
 
 ahoy.prolongVisitExpiration = function() {
-  var visitId = ahoy.getVisitId()
-  destroyCookie("ahoy_visit")
+  var visitId = ahoy.getVisitId();
+  destroyCookie("ahoy_visit");
   setCookie("ahoy_visit", visitId, config.visitDuration);
+
+  var visitorId = ahoy.getVisitorId();
+  destroyCookie("ahoy_visitor");
+  setCookie("ahoy_visitor", visitorId, config.visitorDuration);
 };
 
 ahoy.reset = function () {
