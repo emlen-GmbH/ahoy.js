@@ -50,8 +50,10 @@ var Cookies = {
   }
 };
 
-var initializeAhoyInstance = function () {
-  var config = {
+var initializeAhoyInstance = function (options) {
+  if ( options === void 0 ) options={};
+
+  var defaultConfig = {
     urlPrefix: "",
     visitsUrl: "/ahoy/visits",
     eventsUrl: "/ahoy/events",
@@ -69,6 +71,8 @@ var initializeAhoyInstance = function () {
     visitDuration: 4 * 60, // default 4 hours
     visitorDuration: 2 * 365 * 24 * 60 // default 2 years
   };
+
+  var config = Object.assign({}, defaultConfig, options);
 
   var ahoy = window.ahoy || window.Ahoy || {};
 

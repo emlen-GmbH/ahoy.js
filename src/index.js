@@ -1,8 +1,8 @@
 import { serialize } from "object-to-formdata";
 import Cookies from './cookies';
 
-export const initializeAhoyInstance = () => {
-  let config = {
+export const initializeAhoyInstance = (options={}) => {
+  let defaultConfig = {
     urlPrefix: "",
     visitsUrl: "/ahoy/visits",
     eventsUrl: "/ahoy/events",
@@ -20,6 +20,8 @@ export const initializeAhoyInstance = () => {
     visitDuration: 4 * 60, // default 4 hours
     visitorDuration: 2 * 365 * 24 * 60 // default 2 years
   };
+
+  let config = Object.assign({}, defaultConfig, options)
 
   let ahoy = window.ahoy || window.Ahoy || {};
 
