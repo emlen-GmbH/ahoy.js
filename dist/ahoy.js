@@ -154,6 +154,7 @@
       cookies: true,
       cookieDomain: null,
       cookiePath:  null,
+      cookieNamePrefix: null,
       headers: {},
       visitParams: {},
       withCredentials: false,
@@ -201,16 +202,26 @@
 
   // cookies
 
+    function getCookieName(name) {
+      var nameWithPrefix = null;
+
+      if (config.cookieNamePrefix) {
+        nameWithPrefix = (config.cookieNamePrefix) + "_" + name;
+      }
+
+      return nameWithPrefix || name
+    }
+
     function setCookie(name, value, ttl) {
-      Cookies.set(name, value, ttl, config.cookieDomain || config.domain, config.cookiePath);
+      Cookies.set(getCookieName(name), value, ttl, config.cookieDomain || config.domain, config.cookiePath);
     }
 
     function getCookie(name) {
-      return Cookies.get(name);
+      return Cookies.get(getCookieName(name));
     }
 
     function destroyCookie(name) {
-      Cookies.set(name, "", -1, config.cookieDomain || config.domain, config.cookiePath);
+      Cookies.set(getCookieName(name), "", -1, config.cookieDomain || config.domain, config.cookiePath);
     }
 
     function log(message) {
