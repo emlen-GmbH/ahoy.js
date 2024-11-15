@@ -2,7 +2,7 @@
  * Ahoy.js
  * Simple, powerful JavaScript analytics
  * https://github.com/ankane/ahoy.js
- * v0.3.7
+ * v0.3.8
  * MIT License
  */
 
@@ -12,42 +12,66 @@
   (global = global || self, factory(global.ahoy = {}));
 }(this, (function (exports) { 'use strict';
 
-  var isUndefined = function (value) { return value === undefined; };
+  function isUndefined(value) {
+    return value === undefined;
+  }
 
-  var isNull = function (value) { return value === null; };
+  function isNull(value) {
+    return value === null;
+  }
 
-  var isBoolean = function (value) { return typeof value === 'boolean'; };
+  function isBoolean(value) {
+    return typeof value === 'boolean';
+  }
 
-  var isObject = function (value) { return value === Object(value); };
+  function isObject(value) {
+    return value === Object(value);
+  }
 
-  var isArray = function (value) { return Array.isArray(value); };
+  function isArray(value) {
+    return Array.isArray(value);
+  }
 
-  var isDate = function (value) { return value instanceof Date; };
+  function isDate(value) {
+    return value instanceof Date;
+  }
 
-  var isBlob = function (value) { return value &&
-    typeof value.size === 'number' &&
-    typeof value.type === 'string' &&
-    typeof value.slice === 'function'; };
+  function isBlob(value, isReactNative) {
+    return isReactNative
+      ? isObject(value) && !isUndefined(value.uri)
+      : isObject(value) &&
+          typeof value.size === 'number' &&
+          typeof value.type === 'string' &&
+          typeof value.slice === 'function';
+  }
 
-  var isFile = function (value) { return isBlob(value) &&
-    typeof value.name === 'string' &&
-    (typeof value.lastModifiedDate === 'object' ||
-      typeof value.lastModified === 'number'); };
+  function isFile(value, isReactNative) {
+    return (
+      isBlob(value, isReactNative) &&
+      typeof value.name === 'string' &&
+      (isObject(value.lastModifiedDate) || typeof value.lastModified === 'number')
+    );
+  }
 
-  var serialize = function (obj, cfg, fd, pre) {
+  function initCfg(value) {
+    return isUndefined(value) ? false : value;
+  }
+
+  function serialize(obj, cfg, fd, pre) {
     cfg = cfg || {};
-
-    cfg.indices = isUndefined(cfg.indices) ? false : cfg.indices;
-
-    cfg.nullsAsUndefineds = isUndefined(cfg.nullsAsUndefineds)
-      ? false
-      : cfg.nullsAsUndefineds;
-
-    cfg.booleansAsIntegers = isUndefined(cfg.booleansAsIntegers)
-      ? false
-      : cfg.booleansAsIntegers;
-
     fd = fd || new FormData();
+
+    cfg.indices = initCfg(cfg.indices);
+    cfg.nullsAsUndefineds = initCfg(cfg.nullsAsUndefineds);
+    cfg.booleansAsIntegers = initCfg(cfg.booleansAsIntegers);
+    cfg.allowEmptyArrays = initCfg(cfg.allowEmptyArrays);
+    cfg.noAttributesWithArrayNotation = initCfg(
+      cfg.noAttributesWithArrayNotation
+    );
+    cfg.noFilesWithArrayNotation = initCfg(cfg.noFilesWithArrayNotation);
+    cfg.dotsForObjectNotation = initCfg(cfg.dotsForObjectNotation);
+
+    var isReactNative = typeof fd.getParts === 'function';
 
     if (isUndefined(obj)) {
       return fd;
@@ -66,12 +90,21 @@
         obj.forEach(function (value, index) {
           var key = pre + '[' + (cfg.indices ? index : '') + ']';
 
+          if (
+            cfg.noAttributesWithArrayNotation ||
+            (cfg.noFilesWithArrayNotation && isFile(value, isReactNative))
+          ) {
+            key = pre;
+          }
+
           serialize(value, cfg, fd, key);
         });
+      } else if (cfg.allowEmptyArrays) {
+        fd.append(cfg.noAttributesWithArrayNotation ? pre : pre + '[]', '');
       }
     } else if (isDate(obj)) {
       fd.append(pre, obj.toISOString());
-    } else if (isObject(obj) && !isFile(obj) && !isBlob(obj)) {
+    } else if (isObject(obj) && !isBlob(obj, isReactNative)) {
       Object.keys(obj).forEach(function (prop) {
         var value = obj[prop];
 
@@ -81,7 +114,11 @@
           }
         }
 
-        var key = pre ? pre + '[' + prop + ']' : prop;
+        var key = pre
+          ? cfg.dotsForObjectNotation
+            ? pre + '.' + prop
+            : pre + '[' + prop + ']'
+          : prop;
 
         serialize(value, cfg, fd, key);
       });
@@ -90,12 +127,12 @@
     }
 
     return fd;
-  };
+  }
 
-  var index_module = {
+  var src = {
     serialize: serialize,
   };
-  var index_module_1 = index_module.serialize;
+  var src_1 = src.serialize;
 
   // https://www.quirksmode.org/js/cookies.html
 
@@ -349,8 +386,9 @@
 
     function eventData(event) {
       var data = {
-        events: [event]
+        events: event.events
       };
+
       if (config.cookies) {
         data.visit_token = event.visit_token;
         data.visitor_token = event.visitor_token;
@@ -384,7 +422,7 @@
         // stringify so we keep the type
         data.events_json = JSON.stringify(data.events);
         delete data.events;
-        window.navigator.sendBeacon(eventsUrl(), index_module_1(data));
+        window.navigator.sendBeacon(eventsUrl(), src_1(data));
       });
     }
 
@@ -527,14 +565,16 @@
       return true;
     };
 
-    ahoy.track = function (name, properties) {
+    ahoy.track = function (events) { // [{ name: eventName, properties }]
       // generate unique id
       var event = {
-        name: name,
-        properties: properties || {},
-        time: (new Date()).getTime() / 1000.0,
-        id: generateId(),
-        js: true
+        events: events.map(function (event) { return ({
+          name: event.name,
+          properties: event.properties || {},
+          time: (new Date()).getTime() / 1000.0,
+          id: generateId(),
+          js: true
+        }); })
       };
 
       ahoy.ready( function () {
@@ -579,7 +619,7 @@
           }
         }
       }
-      ahoy.track("$view", properties);
+      ahoy.track([{ name: "$view", properties: properties }]);
     };
 
     ahoy.trackClicks = function () {
@@ -588,21 +628,21 @@
         var properties = eventProperties(e);
         properties.text = properties.tag == "input" ? target.value : (target.textContent || target.innerText || target.innerHTML).replace(/[\s\r\n]+/g, " ").trim();
         properties.href = target.href;
-        ahoy.track("$click", properties);
+        ahoy.track([{ name: "$click", properties: properties }]);
       });
     };
 
     ahoy.trackSubmits = function () {
       onEvent("submit", "form", function (e) {
         var properties = eventProperties(e);
-        ahoy.track("$submit", properties);
+        ahoy.track([{ name: "$submit", properties: properties }]);
       });
     };
 
     ahoy.trackChanges = function () {
       onEvent("change", "input, textarea, select", function (e) {
         var properties = eventProperties(e);
-        ahoy.track("$change", properties);
+        ahoy.track([{ name: "$change", properties: properties }]);
       });
     };
 
