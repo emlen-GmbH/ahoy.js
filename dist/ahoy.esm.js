@@ -2,7 +2,7 @@
  * Ahoy.js
  * Simple, powerful JavaScript analytics
  * https://github.com/ankane/ahoy.js
- * v0.3.7
+ * v0.3.8
  * MIT License
  */
 
@@ -260,8 +260,9 @@ var initializeAhoyInstance = function (options) {
 
   function eventData(event) {
     var data = {
-      events: [event]
+      events: event.events
     };
+
     if (config.cookies) {
       data.visit_token = event.visit_token;
       data.visitor_token = event.visitor_token;
@@ -438,14 +439,16 @@ var initializeAhoyInstance = function (options) {
     return true;
   };
 
-  ahoy.track = function (name, properties) {
+  ahoy.track = function (events) { // [{ name: eventName, properties }]
     // generate unique id
     var event = {
-      name: name,
-      properties: properties || {},
-      time: (new Date()).getTime() / 1000.0,
-      id: generateId(),
-      js: true
+      events: events.map(function (event) { return ({
+        name: event.name,
+        properties: event.properties || {},
+        time: (new Date()).getTime() / 1000.0,
+        id: generateId(),
+        js: true
+      }); })
     };
 
     ahoy.ready( function () {
@@ -490,7 +493,7 @@ var initializeAhoyInstance = function (options) {
         }
       }
     }
-    ahoy.track("$view", properties);
+    ahoy.track([{ name: "$view", properties: properties }]);
   };
 
   ahoy.trackClicks = function () {
@@ -499,21 +502,21 @@ var initializeAhoyInstance = function (options) {
       var properties = eventProperties(e);
       properties.text = properties.tag == "input" ? target.value : (target.textContent || target.innerText || target.innerHTML).replace(/[\s\r\n]+/g, " ").trim();
       properties.href = target.href;
-      ahoy.track("$click", properties);
+      ahoy.track([{ name: "$click", properties: properties }]);
     });
   };
 
   ahoy.trackSubmits = function () {
     onEvent("submit", "form", function (e) {
       var properties = eventProperties(e);
-      ahoy.track("$submit", properties);
+      ahoy.track([{ name: "$submit", properties: properties }]);
     });
   };
 
   ahoy.trackChanges = function () {
     onEvent("change", "input, textarea, select", function (e) {
       var properties = eventProperties(e);
-      ahoy.track("$change", properties);
+      ahoy.track([{ name: "$change", properties: properties }]);
     });
   };
 
