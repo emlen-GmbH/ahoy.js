@@ -209,8 +209,9 @@ export const initializeAhoyInstance = (options={}) => {
 
   function eventData(event) {
     let data = {
-      events: [event]
+      events: event.events
     };
+
     if (config.cookies) {
       data.visit_token = event.visit_token;
       data.visitor_token = event.visitor_token;
@@ -387,14 +388,16 @@ export const initializeAhoyInstance = (options={}) => {
     return true;
   };
 
-  ahoy.track = function (name, properties) {
+  ahoy.track = function (events) { // [{ name: eventName, properties }]
     // generate unique id
     let event = {
-      name: name,
-      properties: properties || {},
-      time: (new Date()).getTime() / 1000.0,
-      id: generateId(),
-      js: true
+      events: events.map(event => ({
+        name: event.name,
+        properties: event.properties || {},
+        time: (new Date()).getTime() / 1000.0,
+        id: generateId(),
+        js: true
+      }))
     };
 
     ahoy.ready( function () {
@@ -439,7 +442,7 @@ export const initializeAhoyInstance = (options={}) => {
         }
       }
     }
-    ahoy.track("$view", properties);
+    ahoy.track([{ name: "$view", properties }]);
   };
 
   ahoy.trackClicks = function () {
@@ -448,21 +451,21 @@ export const initializeAhoyInstance = (options={}) => {
       let properties = eventProperties(e);
       properties.text = properties.tag == "input" ? target.value : (target.textContent || target.innerText || target.innerHTML).replace(/[\s\r\n]+/g, " ").trim();
       properties.href = target.href;
-      ahoy.track("$click", properties);
+      ahoy.track([{ name: "$click", properties }]);
     });
   };
 
   ahoy.trackSubmits = function () {
     onEvent("submit", "form", function (e) {
       let properties = eventProperties(e);
-      ahoy.track("$submit", properties);
+      ahoy.track([{ name: "$submit", properties }]);
     });
   };
 
   ahoy.trackChanges = function () {
     onEvent("change", "input, textarea, select", function (e) {
       let properties = eventProperties(e);
-      ahoy.track("$change", properties);
+      ahoy.track([{ name: "$change", properties }]);
     });
   };
 
