@@ -198,7 +198,7 @@ export const initializeAhoyInstance = (options={}) => {
         }
         xhr.onload = function() {
           if (xhr.status === 200) {
-            success();
+            success(xhr.response);
           }
         };
         CSRFProtection(xhr);
@@ -221,9 +221,11 @@ export const initializeAhoyInstance = (options={}) => {
     return data;
   }
 
-  function trackEvent(event) {
+  function trackEvent(event, onSuccess) {
     ahoy.ready( function () {
-      sendRequest(eventsUrl(), eventData(event), function() {
+      sendRequest(eventsUrl(), eventData(event), function(response) {
+        onSuccess && onSuccess(JSON.parse(response));
+        
         // remove from queue
         for (let i = 0; i < eventQueue.length; i++) {
           if (eventQueue[i].id == event.id) {
@@ -388,7 +390,7 @@ export const initializeAhoyInstance = (options={}) => {
     return true;
   };
 
-  ahoy.track = function (events) { // [{ name: eventName, properties }]
+  ahoy.track = function (events, onSuccess) {
     // generate unique id
     let event = {
       events: events.map(event => ({
@@ -419,7 +421,7 @@ export const initializeAhoyInstance = (options={}) => {
 
           // wait in case navigating to reduce duplicate events
           setTimeout( function () {
-            trackEvent(event);
+            trackEvent(event, onSuccess);
           }, 1000);
         }
       });
