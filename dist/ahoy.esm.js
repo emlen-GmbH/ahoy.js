@@ -2,7 +2,7 @@
  * Ahoy.js
  * Simple, powerful JavaScript analytics
  * https://github.com/ankane/ahoy.js
- * v0.3.8
+ * v0.3.9
  * MIT License
  */
 
@@ -249,7 +249,7 @@ var initializeAhoyInstance = function (options) {
         }
         xhr.onload = function() {
           if (xhr.status === 200) {
-            success();
+            success(xhr.response);
           }
         };
         CSRFProtection(xhr);
@@ -272,9 +272,11 @@ var initializeAhoyInstance = function (options) {
     return data;
   }
 
-  function trackEvent(event) {
+  function trackEvent(event, onSuccess) {
     ahoy.ready( function () {
-      sendRequest(eventsUrl(), eventData(event), function() {
+      sendRequest(eventsUrl(), eventData(event), function(response) {
+        onSuccess && onSuccess(JSON.parse(response));
+        
         // remove from queue
         for (var i = 0; i < eventQueue.length; i++) {
           if (eventQueue[i].id == event.id) {
@@ -439,7 +441,7 @@ var initializeAhoyInstance = function (options) {
     return true;
   };
 
-  ahoy.track = function (events) { // [{ name: eventName, properties }]
+  ahoy.track = function (events, onSuccess) {
     // generate unique id
     var event = {
       events: events.map(function (event) { return ({
@@ -470,7 +472,7 @@ var initializeAhoyInstance = function (options) {
 
           // wait in case navigating to reduce duplicate events
           setTimeout( function () {
-            trackEvent(event);
+            trackEvent(event, onSuccess);
           }, 1000);
         }
       });
